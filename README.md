@@ -110,7 +110,3 @@ std::map<std::string,int> m = {{"a",1},{"b",2},{"c",3}};
 for (auto k : m | keys())   std::cout << k << " "; // a b c
 for (auto val : m | values()) std::cout << val << " "; // 1 2 3
 ```
-
-## License
-
-The project is open; see `LICENSE` file for terms (MIT by default).

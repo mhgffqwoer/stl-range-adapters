@@ -1,55 +1,116 @@
-# Range adapters
+# STL Range Adapters
 
-STL. Адаптеры.
+A small library providing lazy adapters for standard containers and algorithms, enabling functional-style pipelines while keeping computations deferred and objects lightweight.
 
-## Задача
+## Description
 
-Разработана библиотеку адаптеров для упрощенной работы с алгоритмами и контейнерами.
+The package offers a set of adapters (`filter`, `transform`, `take`, `drop`, `reverse`, `keys`, `values`) that can be used
+in combination with the `|` operator, similar to Unix streams or modern range libraries.
 
-Зачастую стоит задача применения нескольких алгоритмов одновременно, например:
+**Features:**
+
+- **Lazy evaluation**: elements are not processed until iterated.
+- **Non-owning**: adapters hold only references to the original container.
+- **Easy integration**: works with any iterable container, requirements enforced via `static_assert`.
+- **Composable**: adapters can be chained arbitrarily.
+
+## How it works
+
+Each adapter is a wrapper object around a pair of iterators (begin, end).
+Adapters implement their own proxy iterators which, on increment or dereference,
+apply the provided predicate, transformation, or simply advance.
+
+1. **filter** - skips elements that do not satisfy a predicate.
+2. **transform** - returns the result of a transformer function when dereferenced.
+3. **take** - limits the number of returned elements.
+4. **drop** - skips the first N elements.
+5. **reverse** - iterates the container in reverse order.
+6. **keys / values** - operate on associative containers, returning only keys or values.
+
+All adapters provide `begin()`/`end()` and can be used with STL ranges and algorithms.
+
+## Project structure
+
+```
+/ (root directory)
+├─ CMakeLists.txt
+├─ README.md                # this description (now in English)
+├─ bin/
+│   ├─ CMakeLists.txt
+│   └─ main.cpp             # library demonstration
+├─ lib/                     # the library itself
+│   ├─ CMakeLists.txt
+│   └─ Ranges/              # adapter implementation
+│       ├─ Concepts.hpp      # concepts and requirements
+│       ├─ Drop.hpp
+│       ├─ Filter.hpp
+│       ├─ Keys.hpp
+│       ├─ Ranges.cpp        # single compilation unit for testing
+│       ├─ Ranges.hpp
+│       ├─ Reverse.hpp
+│       ├─ Take.hpp
+│       ├─ Transform.hpp
+│       └─ Values.hpp
+└─ tests/
+    ├─ CMakeLists.txt
+    └─ tests.cpp            # usage examples and checks
+```
+
+## Usage examples
+
+### filter
 
 ```cpp
 std::vector<int> v = {1,2,3,4,5,6};
-std::vector<int> result;
-
-std::copy_if(v.begin(), v.end(), std::back_inserter(result), [](int i){return i % 2;});
-std::transform(result.begin(), result.end(), result.begin(), [](int i){return i * i;});
-
-for(int i : result)
-    std::cout << i << " ";
+auto odd = v | filter([](int x){ return x % 2 == 1; });
+// output: 1 3 5
+for (int i : odd) std::cout << i << " ";
 ```
 
-Эту задачу можно было бы решить более "элегантно"
+### transform
 
 ```cpp
 std::vector<int> v = {1,2,3,4,5,6};
-
-auto removed = v | filter([](int i){return i % 2;});
-auto result = removed | transform([](int i){return i * i;});
-
-for(int i : result)
-    std::cout << i << " ";
+auto squares = v | transform([](int x){ return x * x; });
+// output: 1 4 9 16 25 36
+for (int i : squares) std::cout << i << " ";
 ```
 
-или еще более коротко, использовав [конвейер, наподобие того как это принято в unix-системах](https://en.wikipedia.org/wiki/Pipeline_(Unix))
+### take
 
 ```cpp
 std::vector<int> v = {1,2,3,4,5,6};
-
-for(int i : v | filter([](int i){return i % 2;}) | transform([](int i){return i * i;}))
-     std::cout << i << " ";
+auto firstThree = v | take(3);
+// output: 1 2 3
+for (int i : firstThree) std::cout << i << " ";
 ```
 
-Еще одним значимым отличием такого подхода от изначального является то, что вычисления являются ленивыми, а создаваемые объекты не владеют массивом данных для решения данной задача. Подобный подход в частонсти применяется в классах [std::string_view](https://en.cppreference.com/w/cpp/string/basic_string_view) и [std::span](https://en.cppreference.com/w/cpp/container/span)
+### drop
 
-### Содержание библиотеки
+```cpp
+std::vector<int> v = {1,2,3,4,5,6};
+auto afterOne = v | drop(1);
+// output: 2 3 4 5 6
+for (int i : afterOne) std::cout << i << " ";
+```
 
-Адаптеры применяются к контейнерам, и выдвигать собственные требования к ним, которые должны проверяться с помощью метода static_assert
+### reverse
 
-* transform - изменяют значения элементов наподобие того как это делает алгоритм transform
-* filter    - фильтрация по определенному признаку, признак передается в качестве аргумента
-* take      - берет только N первых элементов
-* drop      - пропускаем N первых элементов
-* reverse   - реверсия
-* keys      - ключи для ассоциативных контейнеров
-* values    - значения для ассоциативных контейнеров
+```cpp
+std::vector<int> v = {1,2,3,4,5,6};
+auto rev = v | reverse();
+// output: 6 5 4 3 2 1
+for (int i : rev) std::cout << i << " ";
+```
+
+### keys / values
+
+```cpp
+std::map<std::string,int> m = {{"a",1},{"b",2},{"c",3}};
+for (auto k : m | keys())   std::cout << k << " "; // a b c
+for (auto val : m | values()) std::cout << val << " "; // 1 2 3
+```
+
+## License
+
+The project is open; see `LICENSE` file for terms (MIT by default).

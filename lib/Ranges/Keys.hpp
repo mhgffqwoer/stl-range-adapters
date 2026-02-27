@@ -1,11 +1,13 @@
 #pragma once
 #include "Concepts.hpp"
 
+// tag type for keys adapter, used with associative containers
 class keys {
  public:
   keys() {}
 };
 
+// adapter extracting keys from an associative container
 template <Adapter U, typename T>
 class Keys {
  private:
@@ -18,9 +20,9 @@ class Keys {
     Iterator(Iter data) : data_(data) {}
 
     auto operator++() { return ++data_; }
-
     auto operator--() { return --data_; }
 
+    // dereference returns the key of the pair
     T operator*() { return (*data_).first; }
 
     bool operator==(Iterator<Iter> other) const { return data_ == other.data_; }
@@ -38,10 +40,10 @@ class Keys {
         end_(const_cast<U&>(conteiner).end()) {}
 
   auto begin() const { return begin_; }
-
   auto end() const { return end_; }
 };
 
+// pipe operator for keys: works only on associative containers
 template <RAdapter U>
   requires(same_as<typename U::value_type,
                    pair<const typename U::key_type, typename U::mapped_type>>)

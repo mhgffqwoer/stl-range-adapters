@@ -1,4 +1,4 @@
-# Adapters_lib
+# Range adapters
 
 STL. Адаптеры.
 
